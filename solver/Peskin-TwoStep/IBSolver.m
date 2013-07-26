@@ -84,10 +84,10 @@ IndY = full(indy(:));
 IndY = IndY(:,ones(1, Nx));    
 
 % Construct Matrices
-MatDx = Centered_Dx(Nx,Ny);
-MatDy = Centered_Dy(Nx,Ny);
-MatDxx = Centered_Dxx(Nx,Ny);
-MatDyy = Centered_Dyy(Nx,Ny);
+MatDx = Centered_Dx(Nx,Ny,Lx,Ly);
+MatDy = Centered_Dy(Nx,Ny,Lx,Ly);
+MatDxx = Centered_Dxx(Nx,Ny,Lx,Ly);
+MatDyy = Centered_Dyy(Nx,Ny,Lx,Ly);
 MatLap = MatDxx + MatDyy;
 
 % Construct initial conditions.

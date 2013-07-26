@@ -1,11 +1,11 @@
-function D = Centered_Dy(Nx, Ny)
+function D = Centered_Dy(Nx, Ny, Lx, Ly)
 % Centered_Dy  - Construct a centered difference approximation
 % to the first derivative in the y direction with periodic BC.
 %
 % Authors: Jeffrey Wiens and Brittany Froese, Copyright 2011-2012
 %
 
-dy = 1/(Ny);
+dy = Ly/(Ny);
 
 e = ones(Ny, 1);
 Dy = spdiags([-1*e e],[-1 1], Ny, Ny);
