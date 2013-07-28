@@ -1,18 +1,24 @@
 \documentclass{article}
 \usepackage{graphicx}
 \usepackage{subfigure}
-\usepackage{dsfont}
-\usepackage{amsthm}
-\usepackage{amsmath}
 \usepackage{cancel}
-\usepackage[pdftex]{hyperref} 
-\usepackage[]{mcode}
-\usepackage{pdfsync}
-\usepackage{fullpage}
+%\usepackage{fullpage}
 \usepackage{color}
-
+\usepackage{colortbl,xcolor}
+\usepackage{amsfonts}
+\usepackage{amsmath,amssymb}
+\usepackage{pifont}
+\usepackage{booktabs}
+\usepackage{rotating}
+\usepackage[pdfpagemode=UseNone,pdfstartview=FitH]{hyperref}
+\usepackage{multirow}
+%\usepackage{lineno}
+\usepackage{bbm}
+\usepackage{calc}
+\usepackage{listings}
 \pagestyle{plain}
 
+\newcommand{\matlab}[1]{{{\mcode{#1}}}}
 \newcommand{\sgn}{\text{sgn}}
 \newcommand{\abs}[1]{\left\vert#1\right\vert}
 \newcommand{\mfile}[1]{{\bf \lstinputlisting{#1}}}
@@ -20,6 +26,7 @@
 \newcommand{\esol}{\end{proof}}
 \newcommand{\bq}{\begin{equation}}
 \newcommand{\eq}{\end{equation}}
+\newcommand{\Dt}{\mathcal{D}}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\N}{\mathbb{N}}
 \newcommand{\E}{\mathbb{E}}
@@ -29,17 +36,53 @@
 \newcommand{\sX}{\mathcal{X}}
 \newcommand{\PP}{\mathbb{P}}
 \newcommand{\bO}{\mathcal{O}}
-\newcommand{\blue}[1]{{\color{blue}{#1}}}
+\newcommand{\dt}{\Delta t}
+\newcommand{\Laplacian}{\nabla^2}
+\newcommand{\diffop}[1]{\mathbbmss{#1}} %\mathbb{}, \mathbbm{}
+\newcommand{\ctsop}[1]{\textbf{#1}}
+\newcommand{\mycode}[1]{\texttt{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\half}{\frac{1}{2}}
+\newcommand{\brac}[1]{\left(#1 \right)}
+\newcommand{\Econ}[1]{\E_{\sY|\sX}\left[ #1 \right]}
+\newcommand{\Eun}[1]{\E_{\sY,\sX}\left[ #1 \right]}
+\newcommand{\one}{\mathds{1}}
+\newcommand{\mat}[2]{\left(\begin{array}{#1} #2 \end{array}\right)}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\pdd}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\slantfrac}[2]{ \hspace{3pt}\!^{#1}\!\!\hspace{1pt}/ \hspace{2pt}\!\!_{#2}\!\hspace{3pt} }
+\newcommand{\ra}[1]{\renewcommand{\arraystretch}{#1}}
+\newcommand{\assign}[1]{\textcolor{red}{#1}}
+  \renewcommand{\assign}[1]{#1}
+\newcommand{\leavethisout}[1]{}
+\newcommand{\domwidth}{H}
+\newcommand{\eqmstrain}{L}
+\newcommand{\dx}{h}
+\newcommand{\ds}{h_s}
+\newcommand{\dr}{h_r}
+\newcommand{\EE}{\text{e}}
+\newcommand{\order}[1]{{\mathcal O}\left(#1\right)}
+\newcommand{\myerror}[2]{{\mathcal E}\left[#1;#2\right]}
+\newcommand{\myrate}[2]{{\mathcal R}\left[#1;#2\right]}
+\newcommand{\mydot}{\mbox{\raisebox{1.5pt}{\scriptsize $\bullet$}}}
 
-\newcommand{\softwarename}{MatIB}
+\newcommand{\mystar}{\ast}
+\renewcommand{\mystar}{\text{\large $\ast$}}
+  %\renewcommand{\mystar}{\text{\textasteriskcentered}}
+  %\renewcommand{\mystar}{\bigstar}
+  %\renewcommand{\mystar}{\FiveStarOpen}
+  %\renewcommand{\mystar}{\mbox{\ding{73}}}
+\newcommand{\mydstar}{\mystar\mystar}
+\newcommand{\MAC}{E}% MAC - edges
+\newcommand{\Reynolds}{\mbox{\itshape Re}}
 
 \newtheorem{remark}{Remark}
 
 \graphicspath{{./Figures/}}
 
-\title{User Guide}
-\author{Jeffrey Wiens, Brittany Froese, Dr. John Stockie}
-\date{September 2011}
+\title{MatIB's User Guide}
+\author{Jeffrey Wiens}
+\date{July 2013}
 
 \begin{document}
 
@@ -47,52 +90,112 @@
 
 \section{Introduction}\label{sec:intro}
 
-\softwarename~ is a Matlab implementation of the immersed boundary (IB) method which is released under the MIT Open Source 
-License \footnote{http://www.opensource.org/licenses/mit-license.php}\footnote{The MIT Open Source License only pertains to \softwarename 's codebase and not the algorithms used by \softwarename. Therefore, the original copyrights of these algorithms need to be respected when using \softwarename.}. The IB method was originally developed by Charles Peskin \cite{PeskinHearts} and has proven
-to be a versatile method when simulating the interaction of a moving deformable membrane with a incompressible fluid. In \softwarename, we have implemented 
- Peskin's two-step numerical algorithm \cite{PeskinIB}. Although there are more sophisticated implementations of the IB method,
-\softwarename~ is designed to reduce the barrier needed for researchers and students to study IB problems using the familiar Matlab environment.
+The immersed boundary (IB) method is a mathematical framework for studying fluid-structure interaction  
+initially developed by Charles Peskin to study blood flow through a heart valve~\cite{PeskinHearts}. 
+Since its conception, the IB method has found a wide variety of applications in biofluid mechanics and has
+evolved into a generalized framework~\cite{PeskinIB} for studying fluid-structure interaction problems. 
 
-We begin by establishing the mathematical equations that arise in the two-dimensional IB method for a closed membrane on the periodic domain 
-$\Omega = [0,1]\times[0,1]$ which is parameterized using the Eulerian grid $\vec{x} = (x,y)$.  
-The closed surface of the membrane at time $t$ is defined by the parametric curve
-\[ \vec{\chi}(s,t) = (\chi_x(s,t),\chi_y(s,t)) \]
-using the Lagrangian grid $s \in [0,1]$.
+MatIB is a simple Matlab implementation of the IB method that allows students and researchers to 
+study fluid-structure interaction problems with minimal overhead. MatIB is released under the 
+MIT Open Source License\footnote{http://www.opensource.org/licenses/mit-license.php} and is free to use 
+for any purpose. However, any resulting publications should cite MatIB's user guide.
+The algorithms employed in MatIB are stated in Peskin's review paper~\cite{PeskinIB} 
+which is an adaptation of the Lai-Peskin algorithm~\cite{LaiAlgorithm}. For clarity, we have limited 
+the scope of our implementation and therefore should not be thought as a generalized IB toolkit. 
+Instead, MatIB's codebase acts as a foundation for further experimentation and extension.
 
-The fluid flow is governed by the incompressible Navier-Stokes equations:
-\bq\label{eq:NSE}
-\rho\left(\frac{\partial\vec{u}}{\partial t} + \vec{u}\cdot\nabla\vec{u}\right) = \mu \Delta \vec{u} - \nabla p + \vec{F},
-\eq
-\bq\label{eq:incompressible}
-\nabla \cdot \vec{u} = 0
-\eq
-where $\vec{u}(\vec{x},t)=(u(\vec{x},t),v(\vec{x},t))$ is the fluid velocity, $\rho$ is the fluid density, $\mu$ is the dynamic viscosity, 
-$p(\vec{x},t)$ is the pressure, and $\vec{F}(\vec{x},t)$ is the force. If the only force acting on the fluid comes from the immersed boundary, 
-then $\vec{F}(\vec{x},t)$ is defined as 
-\bq\label{eq:force}
-\vec{F}(\vec{x},t) = \int\limits_\Gamma \vec{f}(s,t) \delta(\vec{x} - \vec{\chi}(s,t))\,ds
-\eq
-where
+\section{Governing Equations}\label{sec:equations}
+
+MatIB is designed to simulate the interaction between a two-dimensional Newtonian, incompressible fluid 
+and a one-dimensional, closed, elastic membrane. The fluid is defined on a periodic box $\Omega = [0,H_x] \times [0,H_y]$
+using the Eulerian coordinates $\bs{x} = (x,y)$. Immersed in the fluid contains a neutrally-buoyant membrane $\Gamma \subset \Omega$
+defined using on moving Lagrangian coordinates which is parameterized by $s \in [0,1]$.
+
+The IB method is mathematically defined by a set of differential equations involving a mixture of Eulerian and Lagrangian variables.
+The fluid is modelled using the incompressible Navier-Stokes equations
+\begin{gather}
+  \label{eq:NSE}
+  \rho \brac{\pd{\bs{u}}{t} + \bs{u}\cdot\nabla\bs{u}} + \nabla p = \mu 
+  \Laplacian \bs{u} + \bs{f}, 
+  \\
+  \label{eq:incompressible}
+  \nabla \cdot \bs{u} = 0,
+\end{gather}
+where 
 \begin{itemize}
-\item $\vec{f}(s,t)$ is the force density on the membrane at the location $\vec{\chi}(s,t)$ and time $t$,
-\item $\delta(\vec{x})$ is the 2D Dirac-delta function.
+\item $\bs{u}(\bs{x},t)=(u(\bs{x},t),v(\bs{x},t))$ and $p(\bs{x},t)$ are the fluid velocity and pressure at the location $\bs{x}$ and time $t$,
+\item $\rho$ and $\mu$ are the fluid density and dynamic viscosity (both constants), and
+\item $\bs{f}(\bs{x},t)$ is the external body force.
 \end{itemize}
-If we assume that the membrane is linked by linear springs, we can express the force density as
-\bq\label{eq:forceDensity}
-\vec{f}(s,t) = \sigma \frac{\partial}{\partial s}\left[\frac{\partial\vec{\chi}(s,t)}{\partial s}\left(1 - \frac{L}{\abs{\frac{\partial \vec{\chi}(s,t)}{\partial s}}}\right)\right]
-\eq
-where $\sigma$ is the spring constant and $L$ is the resting length of the membrane.
-Lastly, the equation that governs the motion of the membrane is defined by 
-\bq\label{eq:membrane}
-\frac{\partial\vec{\chi}(s,t)}{\partial t} = \vec{u}(\vec{\chi}(s,t)) = \int\limits_\Omega \vec{u}(\vec{x},t)\delta(\vec{x}-\vec{\chi}(s,t))\,dx.
-\eq
+The immersed boundary is coupled to the fluid through the external body force $\bs{f}$ allowing the membrane to exert a force onto the fluid.
+Specifically, the external body force is defined by
+\begin{gather}
+  \label{eq:force}
+  \bs{f}(\bs{x},t) = \int\limits_\Gamma \bs{F}(s,t) \, \delta(\bs{x} -
+  \bs{X}(s,t)) \,ds, 
+\end{gather}
+where $\bs{X}(s,t)=(X(s,t), Y(s,t))$ is a parametric curve representing the IB configuration and 
+$\bs{F}(s,t)$ is the elastic force density. The delta function $\delta(\bs{x}) = \delta(x)\delta(y)$ 
+is a Cartesian product of one-dimensional Dirac delta functions, and acts to ``spread'' the IB
+force from $\Gamma$ onto adjacent fluid particles. In general, the
+force density $\bs{F}$ is a functional of the current IB configuration
+\begin{gather}
+  \label{eq:forceDensity}
+  \bs{F}(s,t) = \bs{\mathcal{F}} \left[\bs{X}(s,t)\right].
+\end{gather}
+In MatIB, we define the force density as
+\begin{gather}
+  \label{eq:forceDensityDefinition}
+  \bs{\mathcal{F}}[\bs{X}(s,t)] = \sigma \pd{ }{s}\brac{\pd{\bs{X}}{s}
+    \brac{ 1 - \frac{\eqmstrain}{|\pd{\bs{X}}{s}|} }} 
+\end{gather}
+which corresponds to an elastic fiber having a ``spring constant''
+$\sigma$ and an equilibrium state where the elastic strain $|\partial
+\bs{X} / \partial s| \equiv \eqmstrain$.
 
-\section{How to use \softwarename}\label{sec:HowTo}
+The final equation needed to close the system is an evolution equation
+for the immersed boundary, which comes from the simple requirement that
+$\Gamma$ must move at the local fluid velocity:
+\begin{gather}
+  \label{eq:membrane}
+  \pd{\bs{X}(s,t)}{t} = \bs{u}(\bs{X}(s,t),t) = \int\limits_\Omega
+  \bs{u}(\bs{x},t) \, \delta(\bs{x}-\bs{X}(s,t)) \, d\bs{x}. 
+\end{gather}
+This last equation is nothing other than the no-slip condition which can 
+be written as a delta function convolution.  Periodic boundary conditions are imposed on both
+the fluid and the immersed structure and appropriate initial values are
+prescribed for the fluid velocity $\bs{u}(\bs{x},0)$ and IB position
+$\bs{X}(s,0)$.  Further details on the mathematical formulation of the
+immersed boundary problem and its extensions can be
+found in Peskin's review paper~\cite{PeskinIB}.
 
-\subsection{Example: Elliptical Membrane}\label{sec:EllipticalMembrane}
+\section{Tutorial}\label{sec:Tutorial}
 
-In the folder \emph{examples/} in \softwarename's root directory, there contains a couple of example Matlab scripts demonstrating the use of \softwarename.
-For example, the script \emph{examples/Elliptical Membrane/EllipticalMembrane.m}, plots a movie of how an elliptical membrane deforms in an initially 
+In the following section, we give a brief overview of MatIB's functionality. The codebase is split
+among three folders: \mycode{./solver/}, \mycode{./examples/}, and \mycode{./unit tests/}.
+The main IB solver is contained in the \mycode{./solver/Peskin-TwoStep/} folder which 
+is an implementation of the Lai and Peskin fractional-step scheme~\cite{PeskinIB}. Here, 
+the solver is modulized into three major components:
+\begin{itemize}
+\item \emph{Update Membrane Position:} The fluid velocity is
+  is interpolated onto the immersed boundary and is evolved forward in time.
+\item \emph{Calculate Force:} The force density exerted by the
+  immersed boundary is calculated and is spread onto nearby fluid grid points.
+\item \emph{Fluid Solve:} The fluid variables are evolved in time
+  using the external force computed in the calculate force step.
+\end{itemize}
+Each of these components can be easily extended to handle a wide variety IB applications.
+The \mycode{./examples/} and \mycode{./unit tests/} folders contains example problems 
+and units tests to validate the solver. 
+
+\subsection{Example: Oscillations of an elliptical membrane}\label{sec:EllipticalMembrane}
+
+In the folder \mycode{./examples/} in MatIB's root directory, there contains a couple of example Matlab scripts demonstrating the use of MatIB.
+For example, the script 
+\begin{center}
+\mycode{./examples/Elliptical Membrane/EllipticalMembrane.m}, 
+\end{center}
+plots a movie of how an elliptical membrane deforms in an initially 
 stationary fluid. The membrane will oscillate and eventually settle into a circular state; see Figure~\ref{fig:ellipseProfile}.
 
 \begin{figure}[htdp]
@@ -109,7 +212,7 @@ stationary fluid. The membrane will oscillate and eventually settle into a circu
 
 In this example, we are using Peskin's two-step numerical algorithm \cite{PeskinIB} which is implemented in the folder \emph{solver/Peskin-TwoStep/}. 
 Since Matlab does not allow you to directly call functions residing in different folders, we need to add a couple folders to the PATH variable at the beginning of the script by executing
-\footnote{{\bf Note:} This code is assuming that \emph{"cd ../../"} will bring you to \softwarename's root directory which is true when in the \emph{"examples/Elliptical Membrane} directory".}:
+\footnote{{\bf Note:} This code is assuming that \emph{"cd ../../"} will bring you to MatIB's root directory which is true when in the \emph{"examples/Elliptical Membrane} directory".}:
 \begin{lstlisting}
 % Add PATH reference in order to run solver
 addpath('../../solver/Peskin-TwoStep');
@@ -122,7 +225,7 @@ we are contaminating the PATH variable with directory references, we need to rem
 rmpath('../../solver/Peskin-TwoStep');
 rmpath('../../solver/utils');
 \end{lstlisting}
-If there are multiple solvers installed in \softwarename, removing the PATH references is essentially because of filename conflicts. For example, 
+If there are multiple solvers installed in MatIB, removing the PATH references is essentially because of filename conflicts. For example, 
 if there exist files named \emph{solver/Algorithm1/IBSolver.m} and \emph{solver/Algorithm2/IBSolver.m}, 
 you will experience problems when both Algorithm1 and Algorithm2 are in your PATH variable. Therefore, you need to add and remove PATH references when 
 changing algorithms.
@@ -167,6 +270,12 @@ Once your script correctly links to the IB solver, you need to call the function
 When the function {\bf IBSolver} finishes running, it will return $[X,~Y,~S,~U,~V,~chiX,~chiY]$ which are matrices of the Eulerian and Lagrangian grid,
 the fluid velocity, and membrane position at the last time step.
 
+\section{Acknowledgements}\label{sec:acknowledgements}
+
+I would like to thank both Brittany Froese and Professor John Stockie for their contributions to this project. 
+MatIB came out of a course project with Brittany Froese with the helpful insight of Professor John Stockie. 
+Since its creation, prior versions of MatIB has been used by numerous students at Simon Fraser University 
+which has refined the codebase to its current state.
 
 \newpage
 
