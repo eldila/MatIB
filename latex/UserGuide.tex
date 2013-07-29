@@ -13,10 +13,11 @@
 \usepackage[pdfpagemode=UseNone,pdfstartview=FitH]{hyperref}
 \usepackage{multirow}
 %\usepackage{lineno}
-\usepackage{bbm}
+%\usepackage{bbm}
 \usepackage{calc}
 \usepackage{listings}
 \pagestyle{plain}
+\usepackage[framed,numbered,autolinebreaks,useliterate]{mcode}
 
 \newcommand{\matlab}[1]{{{\mcode{#1}}}}
 \newcommand{\sgn}{\text{sgn}}
@@ -184,19 +185,28 @@ the solver is modulized into three major components:
 \item \emph{Fluid Solve:} The fluid variables are evolved in time
   using the external force computed in the calculate force step.
 \end{itemize}
-Each of these components can be easily extended to handle a wide variety IB applications.
-The \mycode{./examples/} and \mycode{./unit tests/} folders contains example problems 
+Each of these components can be easily extended to handle a wide variety of problems. 
+Lastly, the \mycode{./examples/} and \mycode{./unit tests/} folders contains example problems 
 and units tests to validate the solver. 
 
 \subsection{Example: Oscillations of an elliptical membrane}\label{sec:EllipticalMembrane}
 
-In the folder \mycode{./examples/} in MatIB's root directory, there contains a couple of example Matlab scripts demonstrating the use of MatIB.
-For example, the script 
+In the folder \mycode{./examples/}, there contains several example problems demonstrating the use of MatIB.
+In this section, we will consider the example problem found in
 \begin{center}
 \mycode{./examples/Elliptical Membrane/EllipticalMembrane.m}, 
 \end{center}
-plots a movie of how an elliptical membrane deforms in an initially 
-stationary fluid. The membrane will oscillate and eventually settle into a circular state; see Figure~\ref{fig:ellipseProfile}.
+which simulates the oscillations of an elliptical membrane.
+Here, the initial configuration of the membrane is an 
+ellipse, parameterized by
+\begin{gather*}
+  \bs{X}(s,0) = \left( \half + r_{\text{max}} \cos(2 \pi s) ,~
+    \half + r_{\text{min}}  \sin(2 \pi s) \right),
+\end{gather*}
+which resides in a stationary fluid ($\bs{u}(\bs{x},0)=0$). 
+Since the fluid in the interior of the membrane is confined, 
+the membrane will oscillate and eventually settle into a circular state
+as shown in Figure~\ref{fig:ellipseProfile}.
 
 \begin{figure}[htdp]
 	\centering
@@ -210,71 +220,110 @@ stationary fluid. The membrane will oscillate and eventually settle into a circu
   	\label{fig:ellipseProfile}
 \end{figure}
 
-In this example, we are using Peskin's two-step numerical algorithm \cite{PeskinIB} which is implemented in the folder \emph{solver/Peskin-TwoStep/}. 
-Since Matlab does not allow you to directly call functions residing in different folders, we need to add a couple folders to the PATH variable at the beginning of the script by executing
-\footnote{{\bf Note:} This code is assuming that \emph{"cd ../../"} will bring you to MatIB's root directory which is true when in the \emph{"examples/Elliptical Membrane} directory".}:
+Before any IB simulation using MatIB, the solver first needs to be loaded. 
+In the \mycode{EllipticalMembrane.m} script\footnote{The code assumes that \mycode{"cd ../../"} wil bring you to MatIB's root directory 
+which is true when in the \mycode{"examples/Elliptical Membrane"} directory.}, this is accomplished using the commands:
 \begin{lstlisting}
 % Add PATH reference in order to run solver
 addpath('../../solver/Peskin-TwoStep');
 addpath('../../solver/utils');
 \end{lstlisting}
-This will allow you to call the IB solver \emph{solver/Peskin-TwoStep/IBSolver.m} and other \emph{util} functions required by the solver. Since 
-we are contaminating the PATH variable with directory references, we need to remove these references at the end of the script by executing:
+which adds the solver folders to the top of Matlab's search path.
+This allows the IB solver \mycode{solver/Peskin-TwoStep/IBSolver.m} and corresponding \mycode{util} functions to be called 
+from within the Matlab script. Similarly, at the end of the Matlab script, we remove these folders from the search path 
+using the commands:
 \begin{lstlisting}
 % Remove PATH reference to avoid clutter
 rmpath('../../solver/Peskin-TwoStep');
 rmpath('../../solver/utils');
 \end{lstlisting}
-If there are multiple solvers installed in MatIB, removing the PATH references is essentially because of filename conflicts. For example, 
-if there exist files named \emph{solver/Algorithm1/IBSolver.m} and \emph{solver/Algorithm2/IBSolver.m}, 
-you will experience problems when both Algorithm1 and Algorithm2 are in your PATH variable. Therefore, you need to add and remove PATH references when 
-changing algorithms.
+By using this convention, it allows one to switch between IB solvers by simply changing the path name of the solver.
 
-Once your script correctly links to the IB solver, you need to call the function {\bf IBSolver}. This function takes several parameters as input:
+Once the script correctly links to the IB solver, the \mycode{IBSolver} function can be called 
+with the following input parameters:
 \begin{itemize}
-\item $\mu$ : Dynamic viscosity (scalar) in Navier-Stokes equation \eqref{eq:NSE}.
-\item $\rho$ : Fluid density (scalar) in Navier-Stokes equation \eqref{eq:NSE}.
-\item $\sigma$ : Spring constant (scalar) of the membrane defined in equation \eqref{eq:forceDensity}.
-\item $L$ : Resting length (scalar) of the membrane defined in equation \eqref{eq:forceDensity}.
+\item \mycode{mu} : Dynamic viscosity $\mu$ in Navier-Stokes equation \eqref{eq:NSE}.
+\item \mycode{rho}: Fluid density $\rho$ in Navier-Stokes equation \eqref{eq:NSE}.
+\item \mycode{sigma} : Scalar spring constant $\sigma$ of the membrane defined in equation \eqref{eq:forceDensityDefinition}.
+\item \mycode{L}: Scalar resting length $L$ of the membrane defined in equation \eqref{eq:forceDensityDefinition}.
 
-\item IC\_U, IC\_V: A function handle describing the initial velocity of the fluid $(u(\vec{x},0),v(\vec{x},0))$.
-						The function needs to have the profile:\\
-						\begin{center}{\bf U = IC\_U(X,Y);}\end{center}
-						where X,Y are matrices defining points on the Eulerian grid (created by Matlab's {\bf meshgrid} function) and
-						U is a matrix defining velocity in the x direction (or y direction).
-\item IC\_ChiX,IC\_ChiY: A function handle describing the initial location of the membrane $(\chi_x(s,0),~\chi_y(s,0))$
-							The function needs to have the profile:\\
-							\begin{center}{\bf ChiX = IC\_ChiX(S);}\end{center}
-							where S is a vector defining points on the Lagrangian grid $s\in[0,1]$ and
-							ChiX is a vector defining points (in x direction or y direction) on the membrane.
+\item \mycode{IC\_U}, \mycode{IC\_V}: A function handle describing the initial velocity of the fluid $\bs{u}(\bs{x},0)$
+						with the function profile:
+						\begin{center}\mycode{ U = IC\_U(X,Y);}\end{center}
+						Here, \mycode{X,Y} are matrices defining points on the Eulerian grid (created by Matlab's \mycode{meshgrid} function) and
+						\mycode{U} is a matrix defining the x component of the velocity field.
+\item \mycode{IC\_ChiX},\mycode{IC\_ChiY}: A function handle describing the initial location of the membrane $\bs{X}(s,0)$
+							with the function profile:
+							\begin{center}\mycode{ ChiX = IC\_ChiX(S);}\end{center}
+							The vector \mycode{S} corresponds to the discretized Lagrangian grid $s\in[0,1]$ with
+							\mycode{ChiX} defining the x component of the membrane's position.
 							
-\item $N$ : Number of grid points on each side of the square Eulerian grid.
-\item $N_b$ : Number of grid points on membrane's Lagrangian grid.
-\item NTime: Number of time steps in simulation.
-\item Tfinal: The final time to compute the numerical solution to.
+\item \mycode{Nx},\mycode{Ny} : Number of Eulerian grid points along the x- and y-axis.
+\item \mycode{Lx},\mycode{Ly} : Length of domain along the x- and y-axis.
+\item \mycode{Nb} : Number of grid points on the IB's Lagrangian grid.
+\item \mycode{NTime}: Number of time steps in simulation.
+\item \mycode{Tfinal}: The final time to compute the simulation to.
 
-\item ActionFun: A function handle which is called after each time step. The functions
-							needs to have the profile:\\
-							\begin{center}{\bf ActionFun( dx, dt, indexT, X, Y, U, V, chiX, chiY, Fx, Fy);}\end{center}
+\item \mycode{ActionFun}: A function handle which is called after each time step with the function profile:
+							\begin{center}\mycode{ActionFun(dx, dy, dt, indT, X, Y, U, V, chiX, chiY, Fx, Fy);}\end{center}
 							where 
 							\begin{itemize}
-								\item dx: The scalar spatial discretization of the Eulerian grid.
-								\item dt: The scalar temporal discretization.
-								\item indexT: The number of time steps that have been executed so far.
-								\item X,Y: Matrices which define points on the Eulerian grid.
-								\item U,V: Matrices containing the velocity of the fluid at the end of the current time step on the Eulerian grid. 
-								\item chiX,chiY: Vectors defining points on the membrane using the Lagrangian grid $s\in[0,1]$ at the end of the 
-										current time step.
+								\item \mycode{dx},\mycode{dy}: The spatial step-size of the Eulerian grid.
+								\item \mycode{dt}: The time-step used.
+								\item \mycode{indT}: Index of current time step.
+								\item \mycode{X},\mycode{Y}: Matrices defining spatial Eulerian grid points.
+								\item \mycode{U},\mycode{V}: Matrices containing the current velocity field of the fluid on the Eulerian grid. 
+								\item \mycode{chiX},\mycode{chiY}: Vectors containing the membrane's current position on the Lagrangian grid $s\in[0,1]$.
 							\end{itemize}
 \end{itemize}
-When the function {\bf IBSolver} finishes running, it will return $[X,~Y,~S,~U,~V,~chiX,~chiY]$ which are matrices of the Eulerian and Lagrangian grid,
-the fluid velocity, and membrane position at the last time step.
+When the function {\bf IBSolver} finishes running, it will return \mycode{[X, Y, S, U, V, chiX, chiY]} which are matrices of the Eulerian and Lagrangian grid,
+the fluid velocity, and the membrane position at the last time step.
+\newpage
+In the \mycode{EllipticalMembrane.m} script, the IB solver is called as follows:
+\begin{lstlisting}
+% The number of grid points.
+N = 2*round(2.^4); 
+Nb = 3*N;
+
+% Parameter values.
+mu = 1;        % Viscosity.
+sigma = 1e4;   % Spring constant.
+rho = 1;       % Density.
+rmin = 0.2;    % Length of semi-minor axis.
+rmax = 0.4;    % Length of semi-major axis.
+L = 0;         % Resting length.
+
+% Time step and final time.
+Tfinal = .04;
+dt = 5e-5;
+NTime = floor(Tfinal./dt)+1;
+dt = Tfinal ./ NTime;
+
+% The initial velocity is zero.
+IC_U = @(X,Y) zeros(size(X));
+IC_V = @(X,Y) zeros(size(Y));
+
+% The membrane is an ellipse.
+IC_ChiX = @(S) 0.5 + rmax * cos(2*pi*S);
+IC_ChiY = @(S) 0.5 + rmin * sin(2*pi*S);
+
+% The action function.
+Action = @( dx, dy, dt, indexT, X, Y, U, V, chiX, chiY, Fx, Fy)...
+    PlotMembrane(X, Y, U, V, chiX, chiY, 1);
+
+% Do the IB solve.
+[X, Y, S, U, V, chiX, chiY] = ...
+        IBSolver(mu, rho, sigma, L, IC_U, IC_V, IC_ChiX, IC_ChiY,...
+        N, N, 1, 1, Nb, NTime, Tfinal, Action);
+\end{lstlisting}
+Note, there is a handy routine in the \mycode{solver/utils} folder called \mycode{PlotMembrane} 
+which will plot the membrane's position and fluid velocity field.
 
 \section{Acknowledgements}\label{sec:acknowledgements}
 
 I would like to thank both Brittany Froese and Professor John Stockie for their contributions to this project. 
 MatIB came out of a course project with Brittany Froese with the helpful insight of Professor John Stockie. 
-Since its creation, prior versions of MatIB has been used by numerous students at Simon Fraser University 
+Since its creation, MatIB has been used by numerous students at Simon Fraser University 
 which has refined the codebase to its current state.
 
 \newpage
