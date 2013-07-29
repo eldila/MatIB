@@ -4,5 +4,7 @@ MatIB is a simple Matlab implementation of the IB method that allows stu- dents 
 
 References
 [1] Ming-Chih Lai and Charles S. Peskin. An immersed boundary method with formal second-order accuracy and reduced numerical viscosity. Journal of Computational Physics, 160(2):705–719, 2000.
+
 [2] Charles S. Peskin. Flow patterns around heart valves: A numerical method. Journal of Computational Physics, 10(2):252 – 271, 1972.
+
 [3] Charles S. Peskin. The immersed boundary method. Acta Numerica, 11:479– 517, 2002.
