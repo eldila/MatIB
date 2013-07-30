@@ -2,7 +2,7 @@ The immersed boundary (IB) method is a mathematical framework for studying fluid
 
 MatIB is a simple Matlab implementation of the IB method that allows students and researchers to solve simple fluid-structure interaction problems with minimal overhead. The algorithm employed in MatIB is described in Peskin’s review paper [3] and is an adaptation of the Lai-Peskin algorithm [1]. For clarity, we have limited the scope of our implementation and this code should therefore not be thought as a generalized IB toolkit. Instead, MatIB’s codebase acts as a foundation for further experimentation and extension.
 
-MatIB is released under the MIT Open Source License and is free to use for any purpose. However, any resulting publications should cite this MatIB User Guide.
+MatIB is released under the MIT Open Source License and is free to use for any purpose. However, any resulting publications should cite the MatIB User Guide.
 
 References:
 
