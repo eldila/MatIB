@@ -97,13 +97,17 @@ Since its conception, the IB method has found a wide variety of applications in 
 evolved into a generalized framework~\cite{PeskinIB} for studying fluid-structure interaction problems. 
 
 MatIB is a simple Matlab implementation of the IB method that allows students and researchers to 
-study fluid-structure interaction problems with minimal overhead. MatIB is released under the 
-MIT Open Source License\footnote{http://www.opensource.org/licenses/mit-license.php} and is free to use 
-for any purpose. However, any resulting publications should cite MatIB's user guide.
-The algorithms employed in MatIB are stated in Peskin's review paper~\cite{PeskinIB} 
-which is an adaptation of the Lai-Peskin algorithm~\cite{LaiAlgorithm}. For clarity, we have limited 
-the scope of our implementation and therefore should not be thought as a generalized IB toolkit. 
+solve simple fluid-structure interaction problems with minimal overhead. 
+The algorithm employed in MatIB is described in Peskin's review paper~\cite{PeskinIB} 
+and is an adaptation of the Lai-Peskin algorithm~\cite{LaiAlgorithm}. For clarity, we have limited 
+the scope of our implementation and this code should therefore not be thought as a generalized IB toolkit. 
 Instead, MatIB's codebase acts as a foundation for further experimentation and extension.
+
+MatIB is released under the 
+MIT Open Source License\footnote{http://www.opensource.org/licenses/mit-license.php} and is free to use 
+for any purpose. However, any resulting publications should cite this
+MatIB User Guide.
+
 
 \section{Governing Equations}\label{sec:equations}
 
@@ -124,7 +128,7 @@ The fluid is modelled using the incompressible Navier-Stokes equations
 \end{gather}
 where 
 \begin{itemize}
-\item $\bs{u}(\bs{x},t)=(u(\bs{x},t),v(\bs{x},t))$ and $p(\bs{x},t)$ are the fluid velocity and pressure at the location $\bs{x}$ and time $t$,
+\item $\bs{u}(\bs{x},t)=(u(\bs{x},t),v(\bs{x},t))$ and $p(\bs{x},t)$ are the fluid velocity and pressure at location $\bs{x}$ and time $t$,
 \item $\rho$ and $\mu$ are the fluid density and dynamic viscosity (both constants), and
 \item $\bs{f}(\bs{x},t)$ is the external body force.
 \end{itemize}
@@ -173,10 +177,10 @@ found in Peskin's review paper~\cite{PeskinIB}.
 \section{Tutorial}\label{sec:Tutorial}
 
 In the following section, we give a brief overview of MatIB's functionality. The codebase is split
-among three folders: \mycode{./solver/}, \mycode{./examples/}, and \mycode{./unit tests/}.
+between three folders: \mycode{./solver/}, \mycode{./examples/}, and \mycode{./unit tests/}.
 The main IB solver is contained in the \mycode{./solver/Peskin-TwoStep/} folder which 
 is an implementation of the Lai and Peskin fractional-step scheme~\cite{PeskinIB}. Here, 
-the solver is modulized into three major components:
+the solver is modularized into three major components:
 \begin{itemize}
 \item \emph{Update Membrane Position:} The fluid velocity is
   is interpolated onto the immersed boundary and is evolved forward in time.
@@ -196,9 +200,10 @@ In this section, we will consider the example problem found in
 \begin{center}
 \mycode{./examples/Elliptical Membrane/EllipticalMembrane.m}, 
 \end{center}
-which simulates the oscillations of an elliptical membrane.
-Here, the initial configuration of the membrane is an 
-ellipse, parameterized by
+which simulates the oscillations of a pressurized membrane with an
+initially elliptical shape.
+Here, the initial configuration of the membrane is the
+ellipse parameterized by
 \begin{gather*}
   \bs{X}(s,0) = \left( \half + r_{\text{max}} \cos(2 \pi s) ,~
     \half + r_{\text{min}}  \sin(2 \pi s) \right),
@@ -245,35 +250,35 @@ with the following input parameters:
 \item \mycode{mu} : Dynamic viscosity $\mu$ in Navier-Stokes equation \eqref{eq:NSE}.
 \item \mycode{rho}: Fluid density $\rho$ in Navier-Stokes equation \eqref{eq:NSE}.
 \item \mycode{sigma} : Scalar spring constant $\sigma$ of the membrane defined in equation \eqref{eq:forceDensityDefinition}.
-\item \mycode{L}: Scalar resting length $L$ of the membrane defined in equation \eqref{eq:forceDensityDefinition}.
+\item \mycode{L}: Scalar resting strain $L$ of the membrane defined in equation \eqref{eq:forceDensityDefinition}.
 
 \item \mycode{IC\_U}, \mycode{IC\_V}: A function handle describing the initial velocity of the fluid $\bs{u}(\bs{x},0)$
 						with the function profile:
 						\begin{center}\mycode{ U = IC\_U(X,Y);}\end{center}
-						Here, \mycode{X,Y} are matrices defining points on the Eulerian grid (created by Matlab's \mycode{meshgrid} function) and
-						\mycode{U} is a matrix defining the x component of the velocity field.
-\item \mycode{IC\_ChiX},\mycode{IC\_ChiY}: A function handle describing the initial location of the membrane $\bs{X}(s,0)$
+						Here, \mycode{X,\;Y} are matrices defining points on the Eulerian grid (created by Matlab's \mycode{meshgrid} function) and
+						\mycode{U} is a matrix defining the $x$ component of the velocity field.
+\item \mycode{IC\_ChiX},\;\mycode{IC\_ChiY}: Function handles returning the initial location of the membrane $\bs{X}(s,0)$
 							with the function profile:
 							\begin{center}\mycode{ ChiX = IC\_ChiX(S);}\end{center}
 							The vector \mycode{S} corresponds to the discretized Lagrangian grid $s\in[0,1]$ with
-							\mycode{ChiX} defining the x component of the membrane's position.
+							\mycode{ChiX} defining the $x$ component of the membrane position.
 							
-\item \mycode{Nx},\mycode{Ny} : Number of Eulerian grid points along the x- and y-axis.
-\item \mycode{Lx},\mycode{Ly} : Length of domain along the x- and y-axis.
-\item \mycode{Nb} : Number of grid points on the IB's Lagrangian grid.
-\item \mycode{NTime}: Number of time steps in simulation.
+\item \mycode{Nx},\;\mycode{Ny} : Number of Eulerian grid points along the $x$- and $y$-axes.
+\item \mycode{Lx},\;\mycode{Ly} : Length of domain along the $x$- and $y$-axes.
+\item \mycode{Nb} : Number of grid points on the Lagrangian grid.
+\item \mycode{NTime}: Number of time steps in the simulation.
 \item \mycode{Tfinal}: The final time to compute the simulation to.
 
-\item \mycode{ActionFun}: A function handle which is called after each time step with the function profile:
+\item \mycode{ActionFun}: A function handle which is called after each time step with the function profile
 							\begin{center}\mycode{ActionFun(dx, dy, dt, indT, X, Y, U, V, chiX, chiY, Fx, Fy);}\end{center}
 							where 
 							\begin{itemize}
-								\item \mycode{dx},\mycode{dy}: The spatial step-size of the Eulerian grid.
+								\item \mycode{dx},\;\mycode{dy}: The spatial step-size of the Eulerian grid.
 								\item \mycode{dt}: The time-step used.
 								\item \mycode{indT}: Index of current time step.
-								\item \mycode{X},\mycode{Y}: Matrices defining spatial Eulerian grid points.
-								\item \mycode{U},\mycode{V}: Matrices containing the current velocity field of the fluid on the Eulerian grid. 
-								\item \mycode{chiX},\mycode{chiY}: Vectors containing the membrane's current position on the Lagrangian grid $s\in[0,1]$.
+								\item \mycode{X},\;\mycode{Y}: Matrices defining spatial Eulerian grid points.
+								\item \mycode{U},\;\mycode{V}: Matrices containing the current velocity field of the fluid on the Eulerian grid. 
+								\item \mycode{chiX},\;\mycode{chiY}: Vectors containing the membrane's current position on the Lagrangian grid $s\in[0,1]$.
 							\end{itemize}
 \end{itemize}
 When the function {\bf IBSolver} finishes running, it will return \mycode{[X, Y, S, U, V, chiX, chiY]} which are matrices of the Eulerian and Lagrangian grid,
@@ -282,7 +287,7 @@ the fluid velocity, and the membrane position at the last time step.
 In the \mycode{EllipticalMembrane.m} script, the IB solver is called as follows:
 \begin{lstlisting}
 % The number of grid points.
-N = 2*round(2.^4); 
+N = 32;
 Nb = 3*N;
 
 % Parameter values.
@@ -291,7 +296,7 @@ sigma = 1e4;   % Spring constant.
 rho = 1;       % Density.
 rmin = 0.2;    % Length of semi-minor axis.
 rmax = 0.4;    % Length of semi-major axis.
-L = 0;         % Resting length.
+L = 0;         % Resting strain.
 
 % Time step and final time.
 Tfinal = .04;
@@ -316,7 +321,7 @@ Action = @( dx, dy, dt, indexT, X, Y, U, V, chiX, chiY, Fx, Fy)...
         IBSolver(mu, rho, sigma, L, IC_U, IC_V, IC_ChiX, IC_ChiY,...
         N, N, 1, 1, Nb, NTime, Tfinal, Action);
 \end{lstlisting}
-Note, there is a handy routine in the \mycode{solver/utils} folder called \mycode{PlotMembrane} 
+Note that there is a handy routine in the \mycode{solver/utils} folder called \mycode{PlotMembrane} 
 which will plot the membrane's position and fluid velocity field.
 
 \section{Acknowledgements}\label{sec:acknowledgements}
