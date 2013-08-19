@@ -38,14 +38,13 @@ function [Uh, Vh, U, V] = FluidSolve(U, V, Fx, Fy, rho, mu, dx, dy, dt, Nx, Ny, 
 %
 
 % Construct FFT Operator
-A_hat = 1 + 4*mu*dt/rho*( (sin(pi*IndX/Nx)/dx).^2 + (sin(pi*IndY/Ny)/dy).^2 );
+A_hat = 1 + 2*mu*dt/rho*( (sin(pi*IndX/Nx)/dx).^2 + (sin(pi*IndY/Ny)/dy).^2 );
 
 % Vectorize and construct Diagonal Matrix
 UVec = U(:);
 VVec = V(:);
 UMat = spdiags(UVec, [0], length(UVec), length(UVec));
 VMat = spdiags(VVec, [0], length(VVec), length(VVec));
-I = speye(length(VVec));
 
 % Construct right hand side in linear system
 rhs_u = .5*dt/rho*( - .5*rho*(UMat*MatDx*UVec + VMat*MatDy*UVec) ...
@@ -66,18 +65,18 @@ rhs_u_hat = fft2(rhs_u);
 rhs_v_hat = fft2(rhs_v);  
 
 % Calculate Fluid Pressure
-p_hat = (1.0i/dx*sin(2*pi*IndX/Nx).*rhs_u_hat + 1.0i/dy*sin(2*pi*IndY/Ny).*rhs_v_hat)./...
-            ( dt*(sin(2*pi*IndX/Nx)/dx).^2 + dt*(sin(2*pi*IndY/Ny)/dy).^2 );
+p_hat = -(1.0i/dx*sin(2*pi*IndX/Nx).*rhs_u_hat + 1.0i/dy*sin(2*pi*IndY/Ny).*rhs_v_hat)./...
+            ( 0.5*dt/rho*((sin(2*pi*IndX/Nx)/dx).^2 + (sin(2*pi*IndY/Ny)/dy).^2 ));
         
 % Zero out modes.
 p_hat(1,1) = 0;
-p_hat(1,Ny/2+1) = 0;
-p_hat(Nx/2+1,Ny/2+1) = 0;  
-p_hat(Nx/2+1,1) = 0;
+p_hat(1,Nx/2+1) = 0;
+p_hat(Ny/2+1,Nx/2+1) = 0;  
+p_hat(Ny/2+1,1) = 0;
 
 % Calculate Fluid Velocity
-u_hat = (rhs_u_hat + 1.0i*dt/dx*sin(2*pi*IndX/Nx).*p_hat)./A_hat;
-v_hat = (rhs_v_hat + 1.0i*dt/dy*sin(2*pi*IndY/Ny).*p_hat)./A_hat;
+u_hat = (rhs_u_hat - 0.5*i*dt/(rho*dx)*sin(2*pi*IndX/Nx).*p_hat)./A_hat;
+v_hat = (rhs_v_hat - 0.5*i*dt/(rho*dy)*sin(2*pi*IndY/Ny).*p_hat)./A_hat;
 
 % 2d inverse of Fourier Coefficients
 Uh = real(ifft2(u_hat));
@@ -87,15 +86,13 @@ Vh = real(ifft2(v_hat));
 % Evolve the Fluid a full time-step
 %
 
-% Construct FFT Operator
-A_hat = 1 + 2*mu*dt/rho*( (sin(pi*IndX/Nx)/dx).^2 + (sin(pi*IndY/Ny)/dy).^2 );
+% FFT Operator is the same as in the first step.
 
 % Vectorize and construct Diagonal Matrix
 UhVec = Uh(:);
 VhVec = Vh(:);
 UhMat = spdiags(UhVec, [0], length(UhVec), length(UhVec));
 VhMat = spdiags(VhVec, [0], length(VhVec), length(VhVec));
-I = speye(length(VVec));
 
 % Construct right hand side in linear system
 rhs_u = dt/rho*( - .5*rho*(UhMat*MatDx*UhVec + VhMat*MatDy*UhVec) ...
@@ -116,18 +113,18 @@ rhs_u_hat = fft2(rhs_u);
 rhs_v_hat = fft2(rhs_v);  
 
 % Calculate Fluid Pressure
-p_hat = (1.0i/dx*sin(2*pi*IndX/Nx).*rhs_u_hat + 1.0i/dy*sin(2*pi*IndY/Ny).*rhs_v_hat)./...
-            ( dt*(sin(2*pi*IndX/Nx)/dx).^2 + dt*(sin(2*pi*IndY/Ny)/dy).^2 );
+p_hat = -(1.0i/dx*sin(2*pi*IndX/Nx).*rhs_u_hat + 1.0i/dy*sin(2*pi*IndY/Ny).*rhs_v_hat)./...
+            ( dt/rho*((sin(2*pi*IndX/Nx)/dx).^2 +(sin(2*pi*IndY/Ny)/dy).^2 ));
         
 % Zero out modes.
 p_hat(1,1) = 0;
-p_hat(1,Ny/2+1) = 0;
-p_hat(Nx/2+1,Ny/2+1) = 0;  
-p_hat(Nx/2+1,1) = 0;
+p_hat(1,Nx/2+1) = 0;
+p_hat(Ny/2+1,Nx/2+1) = 0;  
+p_hat(Ny/2+1,1) = 0;
 
 % Calculate Fluid Velocity
-u_hat = (rhs_u_hat + 1.0i*dt/dx*sin(2*pi*IndX/Nx).*p_hat)./A_hat;
-v_hat = (rhs_v_hat + 1.0i*dt/dy*sin(2*pi*IndY/Ny).*p_hat)./A_hat;
+u_hat = (rhs_u_hat - 1.0i*dt/(rho*dx)*sin(2*pi*IndX/Nx).*p_hat)./A_hat;
+v_hat = (rhs_v_hat - 1.0i*dt/(rho*dy)*sin(2*pi*IndY/Ny).*p_hat)./A_hat;
 
 % 2d inverse of Fourier Coefficients
 U = real(ifft2(u_hat));
