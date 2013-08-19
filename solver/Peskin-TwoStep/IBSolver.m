@@ -59,8 +59,6 @@ end;
 
 % Step Sizes.
 % These assume periodicity in both x and s (that is, a closed membrane).
-Nx = Nx;
-Ny = Ny;
 dx = Lx/(Nx);
 dy = Ly/(Ny);
 dt = Tfinal/NTime;
@@ -75,13 +73,7 @@ y = (0:dy:Ly-dy)';
 S = linspace(0,1-ds,Nb)';     
 
 % Construct Index Matrices
-indx = [0:Nx-1];
-indy = [0:Ny-1];
-
-IndX = full(indx(:)).';
-IndX = IndX(ones(Ny, 1),:);
-IndY = full(indy(:));
-IndY = IndY(:,ones(1, Nx));    
+[IndX,IndY] = meshgrid(0:Nx-1,0:Ny-1);   
 
 % Construct Matrices
 MatDx = Centered_Dx(Nx,Ny,Lx,Ly);
