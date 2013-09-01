@@ -75,13 +75,6 @@ S = linspace(0,1-ds,Nb)';
 % Construct Index Matrices
 [IndX,IndY] = meshgrid(0:Nx-1,0:Ny-1);   
 
-% Construct Matrices
-MatDx = Centered_Dx(Nx,Ny,Lx,Ly);
-MatDy = Centered_Dy(Nx,Ny,Lx,Ly);
-MatDxx = Centered_Dxx(Nx,Ny,Lx,Ly);
-MatDyy = Centered_Dyy(Nx,Ny,Lx,Ly);
-MatLap = MatDxx + MatDyy;
-
 % Construct initial conditions.
 U = IC_U(X,Y);
 V = IC_V(X,Y);
@@ -101,7 +94,7 @@ for indexT=nTimesVec
    
     % Step 3: Solve for Fluid motion
     [Uh, Vh, U, V] = FluidSolve...
-        (U, V, Fxh, Fyh, rho, mu, dx, dy, dt, Nx, Ny, Lx, Ly, MatDx, MatDy, MatLap, IndX, IndY);
+        (U, V, Fxh, Fyh, rho, mu, dx, dy, dt, Nx, Ny, Lx, Ly, IndX, IndY);
 
     % Step 4: Update Position of Boundary of membrane again for a half
     % time-step
