@@ -1,4 +1,4 @@
-function [Uh, Vh, U, V] = FluidSolve(U, V, Fx, Fy, rho, mu, dx, dy, dt, Nx, Ny, Lx, Ly, MatDx, MatDy, MatLap, IndX, IndY)
+function [Uh, Vh, U, V] = FluidSolve(U, V, Fx, Fy, rho, mu, dx, dy, dt, Nx, Ny, Lx, Ly, IndX, IndY)
 % 
 % This function solves the incompressible Navier-Stokes (NS) equations
 %      rho*u_t = -rho*u*u_x + rho*v*u_y + mu*laplacian(u) - p_x + Fx
@@ -8,8 +8,7 @@ function [Uh, Vh, U, V] = FluidSolve(U, V, Fx, Fy, rho, mu, dx, dy, dt, Nx, Ny, 
 % We are using Peskin's two-step algorithm where the advection terms
 % is expressed in skew symmetric form.
 %
-% INPUTS:  
-%	       U, V           The x and y components of the fluid velocity.  
+% INPUTS:  U, V           The x and y components of the fluid velocity.  
 %                         These should be input as matrices. 
 %          Fx,Fy          The x and y components of the forcing on the
 %                         grid.  These are matrices the same size as U and
@@ -20,9 +19,6 @@ function [Uh, Vh, U, V] = FluidSolve(U, V, Fx, Fy, rho, mu, dx, dy, dt, Nx, Ny, 
 %          Nx, Ny         The number of grid points along each side of the
 %                         domain.
 %          Lx, Ly         The length of the domain.
-%          MatDx, MatDy   Centered difference approximation to the first derivative 
-%                         in the x and y direction with periodic BC.
-%          MatLap         Centered 5-point laplacian stencil
 %          IndX, IndY     Matrix containing indices in x- and y-direction.
 %                         Used as the wave number in FFT solution.
 %
@@ -40,26 +36,36 @@ function [Uh, Vh, U, V] = FluidSolve(U, V, Fx, Fy, rho, mu, dx, dy, dt, Nx, Ny, 
 % Construct FFT Operator
 A_hat = 1 + 2*mu*dt/rho*( (sin(pi*IndX/Nx)/dx).^2 + (sin(pi*IndY/Ny)/dy).^2 );
 
-% Vectorize and construct Diagonal Matrix
-UVec = U(:);
-VVec = V(:);
-UMat = spdiags(UVec, [0], length(UVec), length(UVec));
-VMat = spdiags(VVec, [0], length(VVec), length(VVec));
+% Compute first and second derivatives (centred).
+Ux = Centered_Dx(U,dx);
+Uy = Centered_Dy(U,dy);
+Uxx = Centered_Dxx(U,dx);
+Uyy = Centered_Dyy(U,dy);
+Vx = Centered_Dx(V,dx);
+Vy = Centered_Dy(V,dy);
+Vxx = Centered_Dxx(V,dx);
+Vyy = Centered_Dyy(V,dy);
+
+% Computed derivatives of products U^2, V^2, and U*V.
+USq = U.^2;
+VSq = V.^2;
+UV = U.*V;
+USq_x = Centered_Dx(USq,dx);
+VSq_y = Centered_Dy(VSq,dy);
+UV_x = Centered_Dx(UV,dx);
+UV_y = Centered_Dy(UV,dy);
 
 % Construct right hand side in linear system
-rhs_u = .5*dt/rho*( - .5*rho*(UMat*MatDx*UVec + VMat*MatDy*UVec) ...
-                    - .5*rho*(MatDx*(UVec.^2) + MatDy*(VVec.*UVec)) ...
-                    + Fx(:) ...
-        ) + UVec;
+rhs_u = .5*dt/rho*( - .5*rho*(U.*Ux + V.*Uy) ...
+                    - .5*rho*(USq_x + UV_y) ...
+                    + Fx ...
+        ) + U;
 
-rhs_v = .5*dt/rho*( - .5*rho*(UMat*MatDx*VVec + VMat*MatDy*VVec) ...
-                    - .5*rho*(MatDx*(UVec.*VVec) + MatDy*(VVec.^2)) ...
-                    + Fy(:) ...
-        ) + VVec;
+rhs_v = .5*dt/rho*( - .5*rho*(U.*Vx + V.*Vy) ...
+                    - .5*rho*(UV_x + VSq_y) ...
+                    + Fy ...
+        ) + V;
 
-rhs_u = reshape(rhs_u,Ny,Nx);
-rhs_v = reshape(rhs_v,Ny,Nx);
-    
 % Perform FFT
 rhs_u_hat = fft2(rhs_u);
 rhs_v_hat = fft2(rhs_v);  
@@ -88,26 +94,32 @@ Vh = real(ifft2(v_hat));
 
 % FFT Operator is the same as in the first step.
 
-% Vectorize and construct Diagonal Matrix
-UhVec = Uh(:);
-VhVec = Vh(:);
-UhMat = spdiags(UhVec, [0], length(UhVec), length(UhVec));
-VhMat = spdiags(VhVec, [0], length(VhVec), length(VhVec));
+% Compute first derivatives (centred) at half step.
+Uhx = Centered_Dx(Uh,dx);
+Uhy = Centered_Dy(Uh,dy);
+Vhx = Centered_Dx(Vh,dx);
+Vhy = Centered_Dy(Vh,dy);
+
+% Computed derivatives of products U^2, V^2, and U*V at half step.
+UhSq = Uh.^2;
+VhSq = Vh.^2;
+UhVh = Uh.*Vh;
+UhSq_x = Centered_Dx(UhSq,dx);
+VhSq_y = Centered_Dy(VhSq,dy);
+UhVh_x = Centered_Dx(UhVh,dx);
+UhVh_y = Centered_Dy(UhVh,dy);
 
 % Construct right hand side in linear system
-rhs_u = dt/rho*( - .5*rho*(UhMat*MatDx*UhVec + VhMat*MatDy*UhVec) ...
-                    - .5*rho*(MatDx*(UhVec.^2) + MatDy*(VhVec.*UhVec)) ...
-                    + Fx(:) + mu/2*MatLap*UVec ...
-        ) + UVec;
+rhs_u = dt/rho*( - .5*rho*(Uh.*Uhx + Vh.*Uhy) ...
+                    - .5*rho*(UhSq_x + UhVh_y) ...
+                    + Fx + mu/2*(Uxx+Uyy) ...
+        ) + U;
 
-rhs_v = dt/rho*( - .5*rho*(UhMat*MatDx*VhVec + VhMat*MatDy*VhVec) ...
-                    - .5*rho*(MatDx*(UhVec.*VhVec) + MatDy*(VhVec.^2)) ...
-                    + Fy(:) + mu/2*MatLap*VVec ...
-        ) + VVec;
+rhs_v = dt/rho*( - .5*rho*(Uh.*Vhx + Vh.*Vhy) ...
+                    - .5*rho*(UhVh_x + VhSq_y) ...
+                    + Fy + mu/2*(Vxx+Vyy) ...
+        ) + V;
 
-rhs_u = reshape(rhs_u,Ny,Nx);
-rhs_v = reshape(rhs_v,Ny,Nx);
-    
 % Perform FFT
 rhs_u_hat = fft2(rhs_u);
 rhs_v_hat = fft2(rhs_v);  
