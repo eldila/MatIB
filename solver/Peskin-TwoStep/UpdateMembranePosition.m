@@ -49,7 +49,7 @@ chiYConvBig = repmat(ShiftMembraneValues(chiYConv,Ly),1,supp^2);
 
 % Compute the 1D delta functions.
 deltaX = delta1D(PeriodicDistance(x(ii), chiXConvBig, Lx), dx);
-deltaY = delta1D(PeriodicDistance(y(jj), chiYConvBig, Ly), dx);
+deltaY = delta1D(PeriodicDistance(y(jj), chiYConvBig, Ly), dy);
 
 % Update the membrane position.
 chiX = chiX + (dt*dx*dy) * sum(U(ind) .* deltaX .* deltaY, 2);
